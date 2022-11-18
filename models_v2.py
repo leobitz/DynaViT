@@ -10,6 +10,8 @@ from timm.models.vision_transformer import Mlp, PatchEmbed , _cfg
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.registry import register_model
 
+import numpy as np
+
 class Attention(nn.Module):
     # taken from https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
@@ -187,7 +189,8 @@ class vit_models(nn.Module):
 
             
         self.num_classes = num_classes
-        self.num_features = self.embed_dim = embed_dim
+        self.num_features = self.embed_dim = self.hidden_size = embed_dim
+        self.num_layers = depth
 
         self.patch_embed = Patch_layer(
                 img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
@@ -266,11 +269,171 @@ class vit_models(nn.Module):
         
         return x
 
+
+class dyna_vit_models(nn.Module):
+    """ Vision Transformer with LayerScale (https://arxiv.org/abs/2103.17239) support
+    taken from https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
+    with slight modifications
+    """
+    def __init__(self, img_size=224,  patch_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
+                 num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
+                 drop_path_rate=0., norm_layer=nn.LayerNorm, global_pool=None,
+                 block_layers = Block,
+                 Patch_layer=PatchEmbed,act_layer=nn.GELU,
+                 Attention_block = Attention, Mlp_block=Mlp,
+                dpr_constant=True,init_scale=1e-4,
+                mlp_ratio_clstk = 4.0):
+        super().__init__()
+
+        print("Initing Dynamic Vit")
+        self.dropout_rate = drop_rate
+
+            
+        self.num_classes = num_classes
+        self.num_features = self.embed_dim = self.hidden_size = embed_dim
+        self.num_layers = depth
+
+        self.patch_embed = Patch_layer(
+                img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
+        num_patches = self.patch_embed.num_patches
+
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
+
+        dpr = [drop_path_rate for i in range(depth)]
+        self.blocks = nn.ModuleList([
+            block_layers(
+                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                drop=0.0, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer,
+                act_layer=act_layer,Attention_block=Attention_block,Mlp_block=Mlp_block,init_values=init_scale)
+            for i in range(depth)])
+        
+
+        
+        self.dropout = nn.Dropout(float(self.dropout_rate))
+        self.norm = norm_layer(embed_dim)
+
+        self.feature_info = [dict(num_chs=embed_dim, reduction=0, module='head')]
+        self.head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+
+        trunc_normal_(self.pos_embed, std=.02)
+        trunc_normal_(self.cls_token, std=.02)
+        self.apply(self._init_weights)
+
+        s = .9
+        e = 0.1
+        l = depth
+        a = (np.log(e) - np.log(s)) / l
+        b = np.log(s)/a
+        proc_probs = [np.e ** (a * (i + b)) for i in range(l + 1)]
+        proc_probs.reverse()
+        self.proc_probs_softmax = torch.softmax(torch.tensor(proc_probs), dim=0)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            trunc_normal_(m.weight, std=.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+
+    @torch.jit.ignore
+    def no_weight_decay(self):
+        return {'pos_embed', 'cls_token'}
+
+    def get_classifier(self):
+        return self.head
+    
+    def get_num_layers(self):
+        return len(self.blocks)
+    
+    def reset_classifier(self, num_classes, global_pool=''):
+        self.num_classes = num_classes
+        self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+
+    def forward_features(self, x):
+        B = x.shape[0]
+        x = self.patch_embed(x)
+
+        cls_tokens = self.cls_token.expand(B, -1, -1)
+        
+        x = x + self.pos_embed
+        
+        x = torch.cat((cls_tokens, x), dim=1)
+            
+        for i , blk in enumerate(self.blocks):
+            x = blk(x)
+            
+        x = self.norm(x)
+        return x[:, 0]
+
+    # def forward(self, x):
+
+    #     x = self.forward_features(x)
+        
+        # if self.dropout_rate:
+        #     x = F.dropout(x, p=float(self.dropout_rate), training=self.training)
+        # x = self.head(x)
+        
+    #     return x
+
+    def forward(self, x, skipper, baseline):
+
+        B = x.shape[0]
+        x = self.patch_embed(x)
+        cls_tokens = self.cls_token.expand(B, -1, -1)
+        x = x + self.pos_embed
+        x = torch.cat((cls_tokens, x), dim=1)
+
+        batch_proc_size = []
+        n_layer_proc = torch.zeros((len(x), ), device=x.device, dtype=torch.float32)
+        log_actions = []
+
+        xs = [x]
+
+        hidden_units = None
+        baseline_hidden_units = None
+        state_values = []
+        for li, layer in enumerate(self.blocks):
+
+            skip_input = xs[-1][:, 0].clone().detach()
+
+            skip_pred, action, log_action, hidden_units = skipper(skip_input, hidden_units, li)
+            state_value, baseline_hidden_units = baseline(skip_input, baseline_hidden_units, li)
+            
+            state_values.append(state_value)
+    
+            log_actions.append(log_action)
+            n_layer_proc += action * self.proc_probs_softmax[li]
+
+            layer_proc = torch.nonzero(action).flatten()
+            
+            temp = xs[-1].clone()
+            batch_proc_size.append(len(layer_proc))
+
+            if len(layer_proc) > 0:
+                proc_batch = xs[-1][layer_proc]
+                x = layer(proc_batch)
+                
+                temp[layer_proc] = x
+
+            x = temp
+            xs.append(x)
+
+        x = self.norm(x)[:, 0]
+        # x = self.dropout(x)
+        x = self.head(x)
+
+        return x, batch_proc_size, n_layer_proc, log_actions, state_values
+
 # DeiT III: Revenge of the ViT (https://arxiv.org/abs/2204.07118)
 
 @register_model
-def deit_tiny_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,   **kwargs):
-    model = vit_models(
+def deit_tiny_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,   **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=192, depth=12, num_heads=3, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
     
@@ -278,8 +441,9 @@ def deit_tiny_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,
     
     
 @register_model
-def deit_small_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_small_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
     model.default_cfg = _cfg()
@@ -299,8 +463,9 @@ def deit_small_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False
     return model
 
 @register_model
-def deit_medium_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, **kwargs):
-    model = vit_models(
+def deit_medium_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         patch_size=16, embed_dim=512, depth=12, num_heads=8, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
     model.default_cfg = _cfg()
@@ -319,8 +484,9 @@ def deit_medium_patch16_LS(pretrained=False, img_size=224, pretrained_21k = Fals
     return model 
 
 @register_model
-def deit_base_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_base_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
     if pretrained:
@@ -338,8 +504,9 @@ def deit_base_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,
     return model
     
 @register_model
-def deit_large_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_large_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
     if pretrained:
@@ -357,8 +524,9 @@ def deit_large_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False
     return model
     
 @register_model
-def deit_huge_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_huge_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
     if pretrained:
@@ -376,46 +544,52 @@ def deit_huge_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False,
     return model
     
 @register_model
-def deit_huge_patch14_52_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_huge_patch14_52_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1280, depth=52, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
 
     return model
     
 @register_model
-def deit_huge_patch14_26x2_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_huge_patch14_26x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1280, depth=26, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block_paralx2, **kwargs)
 
     return model
     
 @register_model
-def deit_Giant_48x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_Giant_48x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1664, depth=48, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Block_paral_LS, **kwargs)
 
     return model
 
 @register_model
-def deit_giant_40x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_giant_40x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1408, depth=40, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Block_paral_LS, **kwargs)
     return model
 
 @register_model
-def deit_Giant_48_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_Giant_48_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1664, depth=48, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
     return model
 
 @register_model
-def deit_giant_40_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_giant_40_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1408, depth=40, num_heads=16, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
     #model.default_cfg = _cfg()
@@ -425,32 +599,36 @@ def deit_giant_40_patch14_LS(pretrained=False, img_size=224, pretrained_21k = Fa
 # Models from Three things everyone should know about Vision Transformers (https://arxiv.org/pdf/2203.09795.pdf)
 
 @register_model
-def deit_small_patch16_36_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_small_patch16_36_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=36, num_heads=6, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
 
     return model
     
 @register_model
-def deit_small_patch16_36(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_small_patch16_36(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=36, num_heads=6, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
 
     return model
     
 @register_model
-def deit_small_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_small_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=18, num_heads=6, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block_paralx2, **kwargs)
 
     return model
     
 @register_model
-def deit_small_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_small_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=18, num_heads=6, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Block_paralx2, **kwargs)
 
@@ -458,8 +636,9 @@ def deit_small_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = Fal
     
   
 @register_model
-def deit_base_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_base_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=18, num_heads=12, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block_paralx2, **kwargs)
 
@@ -467,8 +646,9 @@ def deit_base_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = F
 
 
 @register_model
-def deit_base_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_base_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=18, num_heads=12, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Block_paralx2, **kwargs)
 
@@ -476,16 +656,18 @@ def deit_base_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = Fals
     
 
 @register_model
-def deit_base_patch16_36x1_LS(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_base_patch16_36x1_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=36, num_heads=12, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
 
     return model
 
 @register_model
-def deit_base_patch16_36x1(pretrained=False, img_size=224, pretrained_21k = False,  **kwargs):
-    model = vit_models(
+def deit_base_patch16_36x1(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+    model_class = dyna_vit_models if dynamic else vit_models
+    model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=36, num_heads=12, mlp_ratio=4, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
 
