@@ -288,7 +288,7 @@ def create_model(
     # should default to None in command line args/cfg. Remove them if they are present and not set so that
     # non-supporting models don't break and default args remain in effect.
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
-    del kwargs['finetune_num_classes']
+#    del kwargs['finetune_num_classes']
     with set_layer_config(scriptable=scriptable, exportable=exportable, no_jit=no_jit):
         if is_model(model_name):
             create_fn = model_entrypoint(model_name)
