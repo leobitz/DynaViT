@@ -153,8 +153,9 @@ def get_args_parser():
     parser.add_argument('--world_size', default=1, type=int,
                         help='number of distributed processes')
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
-
+    parser.add_argument('--gpus', default=0, type=int, help='number of GPUs')
     parser.add_argument('--exp_name', default='dynamic-vit', help='experiment name')
+    parser.add_argument('--proj_name', default='dynamic-vit', help='project name')
 
 
     # dynamic vision transformer 

@@ -222,13 +222,12 @@ data_loader_val = torch.utils.data.DataLoader(
     drop_last=False
 )
 
-experiment_name = args.exp_name
 net = Net(args)
 
 
 cbs = []
 # logger = TensorBoardLogger("logs", name=args.exp_name)
-logger = WandbLogger(project=args.exp_name)
+logger = WandbLogger(name=args.exp_name, name=args.proj_name)
 trainer = pl.Trainer.from_argparse_args(args, 
                                 logger=logger, 
                                 callbacks=cbs)
