@@ -7,7 +7,7 @@ import torch
 import torchvision
 import warmup_scheduler
 from timm.data import Mixup
-from timm.models import create_model
+from utils import create_model
 from timm.optim import create_optimizer
 from timm.scheduler import create_scheduler
 
