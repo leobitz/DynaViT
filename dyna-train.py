@@ -12,7 +12,7 @@ from timm.optim import create_optimizer
 from timm.scheduler import create_scheduler
 
 import argx
-# from agent import Baseline, Skipper
+from agent import Baseline, Skipper
 from augment import new_data_aug_generator
 from datasets import build_dataset
 from helpers import get_criterion
@@ -36,14 +36,14 @@ class Net(pl.LightningModule):
                     dynamic=hparams.dynamic,
                     finetune_num_classes=hparams.nb_classes
                 )
-        # self.skipper = Skipper(input_size=self.model.hidden_size, 
-        #                        hidden_size=self.model.hidden_size,
-        #                        n_layers=self.model.num_layers, # depth
-        #                        dropout=hparams.rl_dropout)
-        # self.baseline = Baseline(input_size=self.model.hidden_size,
-        #                          hidden_size=self.model.hidden_size,
-        #                          n_layers=self.model.num_layers,
-        #                          dropout=hparams.rl_dropout)
+        self.skipper = Skipper(input_size=self.model.hidden_size, 
+                               hidden_size=self.model.hidden_size,
+                               n_layers=self.model.num_layers, # depth
+                               dropout=hparams.rl_dropout)
+        self.baseline = Baseline(input_size=self.model.hidden_size,
+                                 hidden_size=self.model.hidden_size,
+                                 n_layers=self.model.num_layers,
+                                 dropout=hparams.rl_dropout)
 
         self.mixup_fn = None
         mixup_active = hparams.mixup > 0 or hparams.cutmix > 0. or hparams.cutmix_minmax is not None
@@ -67,10 +67,10 @@ class Net(pl.LightningModule):
             self.optimizer, multiplier=1., total_epoch=self.hparams.warmup_epochs, 
                     after_scheduler=self.base_scheduler)
 
-        self.rl_optimizer = torch.optim.AdamW(self.model.skipper.parameters(), lr=self.hparams.rl_lr, betas=(
+        self.rl_optimizer = torch.optim.AdamW(self.skipper.parameters(), lr=self.hparams.rl_lr, betas=(
             self.hparams.beta1, self.hparams.beta2), weight_decay=5e-5)
 
-        self.baseline_optimizer = torch.optim.AdamW(self.model.baseline.parameters(), lr=self.hparams.rl_lr, betas=(
+        self.baseline_optimizer = torch.optim.AdamW(self.baseline.parameters(), lr=self.hparams.rl_lr, betas=(
             self.hparams.beta1, self.hparams.beta2), weight_decay=5e-5)
 
         self.rl_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -82,8 +82,8 @@ class Net(pl.LightningModule):
         return ([self.optimizer, self.rl_optimizer, self.baseline_optimizer], 
                 [self.lr_scheduler, self.rl_scheduler, self.baseline_scheduler])
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, x, skipper, baseline):
+        return self.model(x, skipper, baseline)
         
     def training_step(self, batch, batch_idx):
         img, label = batch
@@ -93,7 +93,7 @@ class Net(pl.LightningModule):
         if self.mixup_fn:
             img, labelx = self.mixup_fn(img, labelx)
 
-        out = self(img)
+        out = self(img, self.skipper, self.baseline)
         outx, bsizes, n_layer_proc, log_actions, state_values = out
         loss = self.criterion(outx, labelx)
 
@@ -166,7 +166,7 @@ class Net(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         img, label = batch
-        out = self(img)
+        out = self(img, self.skipper, self.baseline)
 
         out, bsizes, n_layer_proc, log_actions, state_values = out
 
