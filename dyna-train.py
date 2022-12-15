@@ -227,7 +227,7 @@ net = Net(args)
 
 cbs = []
 # logger = TensorBoardLogger("logs", name=args.exp_name)
-logger = WandbLogger(name=args.exp_name, name=args.proj_name)
+logger = WandbLogger(name=args.exp_name, project=args.proj_name)
 trainer = pl.Trainer.from_argparse_args(args, 
                                 logger=logger, 
                                 callbacks=cbs)
