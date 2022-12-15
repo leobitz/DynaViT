@@ -4,7 +4,7 @@
 import torch
 import torch.nn as nn
 from functools import partial
-
+from agent import Baseline, Skipper
 from timm.models.vision_transformer import Mlp, PatchEmbed , _cfg
 
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
@@ -180,7 +180,8 @@ class vit_models(nn.Module):
                  drop_path_rate=0., norm_layer=nn.LayerNorm, global_pool=None,
                  block_layers = Block,
                  Patch_layer=PatchEmbed,act_layer=nn.GELU,
-                 Attention_block = Attention, Mlp_block=Mlp,
+                 Attention_block = Attention, Mlp_block=Mlp, 
+                rl_dropout=0.1,
                 dpr_constant=True,init_scale=1e-4,
                 mlp_ratio_clstk = 4.0):
         super().__init__()
@@ -209,7 +210,14 @@ class vit_models(nn.Module):
             for i in range(depth)])
         
 
-        
+        # self.skipper = Skipper(input_size=self.hidden_size, 
+        #                        hidden_size=self.hidden_size,
+        #                        n_layers=self.num_layers, # depth
+        #                        dropout=rl_dropout)
+        # self.baseline = Baseline(input_size=self.hidden_size,
+        #                          hidden_size=self.hidden_size,
+        #                          n_layers=self.num_layers,
+        #                          dropout=rl_dropout)
             
         self.norm = norm_layer(embed_dim)
 
@@ -281,6 +289,7 @@ class dyna_vit_models(nn.Module):
                  block_layers = Block,
                  Patch_layer=PatchEmbed,act_layer=nn.GELU,
                  Attention_block = Attention, Mlp_block=Mlp,
+                 rl_dropout=0.1,
                 dpr_constant=True,init_scale=1e-4,
                 mlp_ratio_clstk = 4.0):
         super().__init__()
@@ -309,7 +318,14 @@ class dyna_vit_models(nn.Module):
                 act_layer=act_layer,Attention_block=Attention_block,Mlp_block=Mlp_block,init_values=init_scale)
             for i in range(depth)])
         
-
+        self.skipper = Skipper(input_size=self.hidden_size, 
+                               hidden_size=self.hidden_size,
+                               n_layers=self.num_layers, # depth
+                               dropout=rl_dropout)
+        self.baseline = Baseline(input_size=self.hidden_size,
+                                 hidden_size=self.hidden_size,
+                                 n_layers=self.num_layers,
+                                 dropout=rl_dropout)
         
         self.dropout = nn.Dropout(float(self.dropout_rate))
         self.norm = norm_layer(embed_dim)
@@ -379,7 +395,7 @@ class dyna_vit_models(nn.Module):
         
     #     return x
 
-    def forward(self, x, skipper, baseline):
+    def forward(self, x):
 
         B = x.shape[0]
         x = self.patch_embed(x)
@@ -400,8 +416,8 @@ class dyna_vit_models(nn.Module):
 
             skip_input = xs[-1][:, 0].clone().detach()
 
-            skip_pred, action, log_action, hidden_units = skipper(skip_input, hidden_units, li)
-            state_value, baseline_hidden_units = baseline(skip_input, baseline_hidden_units, li)
+            skip_pred, action, log_action, hidden_units = self.skipper(skip_input, hidden_units, li)
+            state_value, baseline_hidden_units = self.baseline(skip_input, baseline_hidden_units, li)
             
             state_values.append(state_value)
     
@@ -458,7 +474,7 @@ def deit_small_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False
             url=name,
             map_location="cpu", check_hash=True
         )
-        model.load_state_dict(checkpoint["model"])
+        model.load_state_dict(checkpoint["model"], strict=False)
 
     return model
 
