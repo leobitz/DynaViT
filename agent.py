@@ -19,7 +19,7 @@ class Skipper(nn.Module):
 
     def forward_train(self, x, hidden, layer_index):
         #print(x.device,  self.linears[layer_index].weight.device)
-        # x = x.to(self.linears[layer_index].weight.device)
+        x = x.to(self.linears[layer_index].weight.device)
         self.dropout(x)
         x = self.linears[layer_index](x)
 
@@ -51,7 +51,7 @@ class Baseline(nn.Module):
 
     def forward(self, x, hidden, layer_index):
         # x, hidden = self.lstm(x, hidden)
-        # x = x.to(self.linears[layer_index].weight.device)
+        x = x.to(self.linears[layer_index].weight.device)
         x = self.fc2[layer_index](x)
         self.dropout(x)
         x = torch.relu(x)
