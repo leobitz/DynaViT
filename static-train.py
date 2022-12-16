@@ -62,7 +62,7 @@ class Net(pl.LightningModule):
         #             after_scheduler=self.base_scheduler)
         self.lr_scheduler = self.base_scheduler
 
-        return self.optimizer, self.lr_scheduler
+        return ([self.optimizer], [self.lr_scheduler])
 
     def forward(self, x):
         return self.model(x)
