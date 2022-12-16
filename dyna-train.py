@@ -88,10 +88,10 @@ class Net(pl.LightningModule):
         
     def training_step(self, batch, batch_idx, optimizer_idx):
         img, label = batch
-        print()
-        print(self.model.proc_probs_softmax.device, 
-                self.skipper.linears[0].weight.device, self.baseline.linears[0].weight.device)
-        print()
+        # print()
+        # print(self.model.proc_probs_softmax.device, 
+        #         self.skipper.linears[0].weight.device, self.baseline.linears[0].weight.device)
+        # print()
         device_name = torch.cuda.get_device_name(img.device)
         if optimizer_idx == 0:
             labelx = label.unsqueeze(-1)
@@ -151,7 +151,7 @@ class Net(pl.LightningModule):
             log_actions = self.cache[device_name+'log_actions']
             delta = Gs - bs.clone().detach()
 
-            policy_loss = (-delta * log_actions).sum(axis=1).mean()
+            policy_loss = (-delta * log_actions.to(delta.device)).sum(axis=1).mean()
             self.log("rl_loss", policy_loss)
         # opt, rl_optim, bs_optim = self.optimizers()
 
