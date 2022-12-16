@@ -404,7 +404,7 @@ class dyna_vit_models(nn.Module):
             state_values.append(state_value)
     
             log_actions.append(log_action)
-            n_layer_proc += action.to(x.device) * self.proc_probs_softmax[li]
+            n_layer_proc += action * self.proc_probs_softmax[li]
 
             layer_proc = torch.nonzero(action).flatten()
             
