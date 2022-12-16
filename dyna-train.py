@@ -28,7 +28,7 @@ class Net(pl.LightningModule):
         self.model = create_model(
                     hparams.model,
                     pretrained=True,
-                    num_classes=1000,
+                    num_classes=hparams.nb_classes,
                     drop_rate=hparams.drop,
                     drop_path_rate=hparams.drop_path,
                     drop_block_rate=None,
