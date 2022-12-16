@@ -89,7 +89,8 @@ class Net(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx):
         img, label = batch
         print()
-        print(self.model.device, self.skipper.device, self.baseline.device)
+        print(self.model.proc_probs_softmax.device, 
+                self.skipper.linears[0].weight.device, self.baseline.linears[0].weight.device)
         print()
         device_name = torch.cuda.get_device_name(img.device)
         if optimizer_idx == 0:
