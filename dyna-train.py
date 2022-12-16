@@ -54,7 +54,7 @@ class Net(pl.LightningModule):
                 label_smoothing=hparams.smoothing, num_classes=hparams.nb_classes)
 
         self.criterion = get_criterion(args, mixup_active)
-        self.automatic_optimization = False
+        # self.automatic_optimization = False
         self.baseline_mse_loss = torch.nn.MSELoss()
 
     def configure_optimizers(self):
@@ -128,21 +128,21 @@ class Net(pl.LightningModule):
         opt, rl_optim, bs_optim = self.optimizers()
 
         # classification loss gradient step
-        opt.zero_grad()
-        self.manual_backward(loss)
-        opt.step()
+        # opt.zero_grad()
+        # self.manual_backward(loss)
+        # opt.step()
 
-        # baseline loss gradient step
-        bs_optim.zero_grad()
-        self.manual_backward(baseline_loss)
-        bs_optim.step()
+        # # baseline loss gradient step
+        # bs_optim.zero_grad()
+        # self.manual_backward(baseline_loss)
+        # bs_optim.step()
 
         # policy loss gradient step
         delta = Gs - bs.clone().detach()
         policy_loss = (-delta * log_actions).sum(axis=1).mean()
-        rl_optim.zero_grad()
-        self.manual_backward(policy_loss)
-        rl_optim.step()
+        # rl_optim.zero_grad()
+        # self.manual_backward(policy_loss)
+        # rl_optim.step()
 
         self.log("rl_loss", policy_loss)
         self.log("baseline_loss", baseline_loss)
@@ -156,12 +156,12 @@ class Net(pl.LightningModule):
 
         return loss
 
-    def training_epoch_end(self, training_step_outputs):
+    # def training_epoch_end(self, training_step_outputs):
 
-        sch, rl_sch, bs_sch = self.lr_schedulers()
-        sch.step()
-        bs_sch.step()
-        rl_sch.step()
+    #     sch, rl_sch, bs_sch = self.lr_schedulers()
+    #     sch.step()
+    #     bs_sch.step()
+    #     rl_sch.step()
 
     
     def validation_step(self, batch, batch_idx):
