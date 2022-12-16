@@ -257,7 +257,7 @@ class vit_models(nn.Module):
         x = self.norm(x)
         return x[:, 0]
 
-    def forward(self, x, d1, d2):
+    def forward(self, x):
 
         x = self.forward_features(x)
         
