@@ -167,6 +167,7 @@ def get_args_parser():
     parser.add_argument("--rl-gamma", default=0.29, type=float)
     parser.add_argument("--reward-epsilon", default=-1e-5, type=float)
     parser.add_argument("--proc-alpha", default=3.0, type=float)
+    parser.add_argument("--grad-acc", default=1, type=float)
 
     parser.add_argument("--beta1", default=0.9, type=float)
     parser.add_argument("--beta2", default=0.999, type=float)

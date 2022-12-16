@@ -55,6 +55,7 @@ class Net(pl.LightningModule):
 
         self.criterion = get_criterion(args, mixup_active)
         self.automatic_optimization = False
+        self.grad_acc = hparams.grad_acc
         self.baseline_mse_loss = torch.nn.MSELoss()
 
     def configure_optimizers(self):
@@ -130,38 +131,43 @@ class Net(pl.LightningModule):
         # classification loss gradient step
         opt.zero_grad()
         self.manual_backward(loss)
-        opt.step()
+        if (batch_idx + 1) % self.grad_acc == 0:
+            opt.step()
 
         # baseline loss gradient step
         bs_optim.zero_grad()
         self.manual_backward(baseline_loss)
-        bs_optim.step()
+        if (batch_idx + 1) % self.grad_acc == 0:
+            bs_optim.step()
 
         # policy loss gradient step
         delta = Gs - bs.clone().detach()
         policy_loss = (-delta * log_actions).sum(axis=1).mean()
         rl_optim.zero_grad()
         self.manual_backward(policy_loss)
-        rl_optim.step()
+        if (batch_idx + 1) % self.grad_acc == 0:
+            rl_optim.step()
 
-        self.log("rl_loss", policy_loss)
-        self.log("baseline_loss", baseline_loss)
-        self.log("loss", loss)
-        self.log("acc", acc)
-        self.log("reward", rewards.mean())
-        self.log("proc_ratio", proc_ratio)
+        if (batch_idx + 1) % self.grad_acc == 0:
+            self.log("rl_loss", policy_loss)
+            self.log("baseline_loss", baseline_loss)
+            self.log("loss", loss)
+            self.log("acc", acc)
+            self.log("reward", rewards.mean())
+            self.log("proc_ratio", proc_ratio)
 
-        for ibs, bs in enumerate(bsizes):
-            self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
+            for ibs, bs in enumerate(bsizes):
+                self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
 
         return loss
 
     def training_epoch_end(self, training_step_outputs):
 
-        sch, rl_sch, bs_sch = self.lr_schedulers()
-        sch.step()
-        bs_sch.step()
-        rl_sch.step()
+        if (self.trainer.current_epoch  + 1) % self.grad_acc == 0:
+            sch, rl_sch, bs_sch = self.lr_schedulers()
+            sch.step()
+            bs_sch.step()
+            rl_sch.step()
 
     
     def validation_step(self, batch, batch_idx):
