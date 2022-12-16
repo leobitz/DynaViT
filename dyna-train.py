@@ -146,9 +146,7 @@ class Net(pl.LightningModule):
             Gs = self.cache[device_name+'gs']
             log_actions = self.cache[device_name+'log_actions']
             delta = Gs - bs.clone().detach()
-            print()
-            print(delta.device, log_actions.device)
-            print()
+
             policy_loss = (-delta * log_actions).sum(axis=1).mean()
             self.log("rl_loss", policy_loss)
         # opt, rl_optim, bs_optim = self.optimizers()
