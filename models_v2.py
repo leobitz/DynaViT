@@ -429,21 +429,21 @@ class dyna_vit_models(nn.Module):
 # DeiT III: Revenge of the ViT (https://arxiv.org/abs/2204.07118)
 
 @register_model
-def deit_tiny_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,   **kwargs):
+def deit_tiny_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=192, depth=12, num_heads=3, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout, **kwargs)
     
     return model
     
     
 @register_model
-def deit_small_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_small_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout, **kwargs)
     model.default_cfg = _cfg()
     if pretrained:
         name = 'https://dl.fbaipublicfiles.com/deit/deit_3_small_'+str(img_size)+'_'
@@ -461,11 +461,11 @@ def deit_small_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False
     return model
 
 @register_model
-def deit_medium_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, **kwargs):
+def deit_medium_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2, **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         patch_size=16, embed_dim=512, depth=12, num_heads=8, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
     model.default_cfg = _cfg()
     if pretrained:
         name = 'https://dl.fbaipublicfiles.com/deit/deit_3_medium_'+str(img_size)+'_'
@@ -482,11 +482,11 @@ def deit_medium_patch16_LS(pretrained=False, img_size=224, pretrained_21k = Fals
     return model 
 
 @register_model
-def deit_base_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_base_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
     if pretrained:
         name = 'https://dl.fbaipublicfiles.com/deit/deit_3_base_'+str(img_size)+'_'
         if pretrained_21k:
@@ -502,11 +502,11 @@ def deit_base_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,
     return model
     
 @register_model
-def deit_large_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_large_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
     if pretrained:
         name = 'https://dl.fbaipublicfiles.com/deit/deit_3_large_'+str(img_size)+'_'
         if pretrained_21k:
@@ -522,11 +522,11 @@ def deit_large_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False
     return model
     
 @register_model
-def deit_huge_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_huge_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1280, depth=32, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
     if pretrained:
         name = 'https://dl.fbaipublicfiles.com/deit/deit_3_huge_'+str(img_size)+'_'
         if pretrained_21k:
@@ -542,16 +542,16 @@ def deit_huge_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False,
     return model
     
 @register_model
-def deit_huge_patch14_52_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_huge_patch14_52_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1280, depth=52, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
 
     return model
     
 @register_model
-def deit_huge_patch14_26x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_huge_patch14_26x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1280, depth=26, num_heads=16, mlp_ratio=4, qkv_bias=True,
@@ -560,7 +560,7 @@ def deit_huge_patch14_26x2_LS(pretrained=False, img_size=224, pretrained_21k = F
     return model
     
 @register_model
-def deit_Giant_48x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_Giant_48x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1664, depth=48, num_heads=16, mlp_ratio=4, qkv_bias=True,
@@ -569,7 +569,7 @@ def deit_Giant_48x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = 
     return model
 
 @register_model
-def deit_giant_40x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_giant_40x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1408, depth=40, num_heads=16, mlp_ratio=4, qkv_bias=True,
@@ -577,19 +577,19 @@ def deit_giant_40x2_patch14_LS(pretrained=False, img_size=224, pretrained_21k = 
     return model
 
 @register_model
-def deit_Giant_48_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_Giant_48_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1664, depth=48, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
     return model
 
 @register_model
-def deit_giant_40_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_giant_40_patch14_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=14, embed_dim=1408, depth=40, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers = Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
     #model.default_cfg = _cfg()
 
     return model
@@ -597,16 +597,16 @@ def deit_giant_40_patch14_LS(pretrained=False, img_size=224, pretrained_21k = Fa
 # Models from Three things everyone should know about Vision Transformers (https://arxiv.org/pdf/2203.09795.pdf)
 
 @register_model
-def deit_small_patch16_36_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_small_patch16_36_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=36, num_heads=6, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
 
     return model
     
 @register_model
-def deit_small_patch16_36(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_small_patch16_36(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=36, num_heads=6, mlp_ratio=4, qkv_bias=True,
@@ -615,7 +615,7 @@ def deit_small_patch16_36(pretrained=False, img_size=224, pretrained_21k = False
     return model
     
 @register_model
-def deit_small_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_small_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=18, num_heads=6, mlp_ratio=4, qkv_bias=True,
@@ -624,7 +624,7 @@ def deit_small_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = 
     return model
     
 @register_model
-def deit_small_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_small_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=384, depth=18, num_heads=6, mlp_ratio=4, qkv_bias=True,
@@ -634,7 +634,7 @@ def deit_small_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = Fal
     
   
 @register_model
-def deit_base_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_base_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=18, num_heads=12, mlp_ratio=4, qkv_bias=True,
@@ -644,7 +644,7 @@ def deit_base_patch16_18x2_LS(pretrained=False, img_size=224, pretrained_21k = F
 
 
 @register_model
-def deit_base_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_base_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=18, num_heads=12, mlp_ratio=4, qkv_bias=True,
@@ -654,16 +654,16 @@ def deit_base_patch16_18x2(pretrained=False, img_size=224, pretrained_21k = Fals
     
 
 @register_model
-def deit_base_patch16_36x1_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_base_patch16_36x1_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=36, num_heads=12, mlp_ratio=4, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout,  **kwargs)
 
     return model
 
 @register_model
-def deit_base_patch16_36x1(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False,  **kwargs):
+def deit_base_patch16_36x1(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=16, embed_dim=768, depth=36, num_heads=12, mlp_ratio=4, qkv_bias=True,

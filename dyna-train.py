@@ -34,7 +34,8 @@ class Net(pl.LightningModule):
                     drop_block_rate=None,
                     img_size=hparams.input_size,
                     dynamic=hparams.dynamic,
-                    finetune_num_classes=hparams.nb_classes
+                    finetune_num_classes=hparams.nb_classes,
+                    rl_dropout = hparams.rl_dropout
                 )
         self.skipper = Skipper(input_size=self.model.hidden_size, 
                                hidden_size=self.model.hidden_size,

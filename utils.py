@@ -252,6 +252,7 @@ def create_model(
         no_jit=None,
         dynamic=False,
         finetune_num_classes=-1, # for fine tuning
+        rl_dropout=0.2,
         **kwargs):
     """Create a model
 
@@ -268,7 +269,7 @@ def create_model(
         global_pool (str): global pool type (default: 'avg')
         **: other kwargs are model specific
     """
-    model_args = dict(pretrained=pretrained, dynamic=dynamic)
+    model_args = dict(pretrained=pretrained, dynamic=dynamic, rl_dropout=rl_dropout)
 
     # Only EfficientNet and MobileNetV3 models have support for batchnorm params or drop_connect_rate passed as args
     is_efficientnet = is_model_in_modules(model_name, ['efficientnet', 'mobilenetv3'])
