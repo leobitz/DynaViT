@@ -18,7 +18,7 @@ class Skipper(nn.Module):
             self.forward_x = self.forward_train
 
     def forward_train(self, x, hidden, layer_index):
-        #print(x.device,  self.linears[layer_index].weight.device)
+        print(x.device,  self.linears[layer_index].weight.device)
         # x = x.to(self.linears[layer_index].weight.device)
         self.dropout(x)
         x = self.linears[layer_index](x)
