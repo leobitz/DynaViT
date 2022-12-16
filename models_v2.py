@@ -213,7 +213,7 @@ class vit_models(nn.Module):
 
         self.feature_info = [dict(num_chs=embed_dim, reduction=0, module='head')]
         self.head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
-
+        self.dropout = nn.Dropout(float(self.dropout_rate))
         trunc_normal_(self.pos_embed, std=.02)
         trunc_normal_(self.cls_token, std=.02)
         self.apply(self._init_weights)
@@ -257,12 +257,12 @@ class vit_models(nn.Module):
         x = self.norm(x)
         return x[:, 0]
 
-    def forward(self, x):
+    def forward(self, x, d1, d2):
 
         x = self.forward_features(x)
         
         if self.dropout_rate:
-            x = F.dropout(x, p=float(self.dropout_rate), training=self.training)
+            x = self.dropout(x)
         x = self.head(x)
         
         return x
