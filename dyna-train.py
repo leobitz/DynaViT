@@ -88,6 +88,7 @@ class Net(pl.LightningModule):
         
     def training_step(self, batch, batch_idx, optimizer_idx):
         img, label = batch
+        device_name = torch.cuda.get_device_name(img.device)
         if optimizer_idx == 0:
             labelx = label.unsqueeze(-1)
             bsizes = []
@@ -124,9 +125,9 @@ class Net(pl.LightningModule):
             bs = torch.stack(state_values).squeeze().transpose(0, 1)
             log_actions = torch.stack(log_actions).transpose(0, 1)
 
-            self.cache[img.device+'bs'] = bs
-            self.cache[img.device+'gs'] = Gs
-            self.cache[img.device+'log_actions'] = log_actions
+            self.cache[device_name+'bs'] = bs
+            self.cache[device_name+'gs'] = Gs
+            self.cache[device_name+'log_actions'] = log_actions
             self.log("loss", loss)
             self.log("acc", acc)
             self.log("reward", rewards.mean())
@@ -135,15 +136,15 @@ class Net(pl.LightningModule):
             for ibs, bs in enumerate(bsizes):
                 self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
         # print(Gs.shape, bs.shape)
-        elif optimizer_idx == 1:
-            bs = self.cache[img.device+'bs']
-            Gs = self.cache[img.device+'gs']
+        elif optimizer_idx == 2:
+            bs = self.cache[device_name+'bs']
+            Gs = self.cache[device_name+'gs']
             baseline_loss = self.baseline_mse_loss(bs, Gs)
             self.log("baseline_loss", baseline_loss)
-        elif optimizer_idx == 2:
-            bs = self.cache[img.device+'bs']
-            Gs = self.cache[img.device+'gs']
-            log_actions = self.cache[img.device+'log_actions']
+        elif optimizer_idx == 1:
+            bs = self.cache[device_name+'bs']
+            Gs = self.cache[device_name+'gs']
+            log_actions = self.cache[device_name+'log_actions']
             delta = Gs - bs.clone().detach()
             policy_loss = (-delta * log_actions).sum(axis=1).mean()
             self.log("rl_loss", policy_loss)
