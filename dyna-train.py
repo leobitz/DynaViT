@@ -63,11 +63,12 @@ class Net(pl.LightningModule):
 
         self.optimizer = create_optimizer(self.hparams, self.model)
 
-        self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        self.base_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, T_max=self.hparams.max_epochs, eta_min=self.hparams.min_lr)
-        # self.lr_scheduler = warmup_scheduler.GradualWarmupScheduler(
-        #     self.optimizer, multiplier=1., total_epoch=self.hparams.warmup_epochs, 
-        #             after_scheduler=self.base_scheduler)
+        self.lr_scheduler = warmup_scheduler.GradualWarmupScheduler(
+            self.optimizer, multiplier=1., total_epoch=self.hparams.warmup_epochs, 
+                    after_scheduler=self.base_scheduler)
+        self.lr_scheduler = self.base_scheduler
 
         self.rl_optimizer = torch.optim.AdamW(self.skipper.parameters(), lr=self.hparams.rl_lr, betas=(
             self.hparams.beta1, self.hparams.beta2), weight_decay=5e-5)
@@ -82,7 +83,7 @@ class Net(pl.LightningModule):
             self.baseline_optimizer, T_max=self.hparams.max_epochs, eta_min=self.hparams.min_lr)
 
         return ([self.optimizer, self.rl_optimizer, self.baseline_optimizer], 
-                [self.base_scheduler, self.rl_scheduler, self.baseline_scheduler])
+                [self.lr_scheduler, self.rl_scheduler, self.baseline_scheduler])
 
     def forward(self, x, skipper, baseline):
         return self.model(x, skipper, baseline)
