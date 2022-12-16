@@ -139,12 +139,14 @@ class Net(pl.LightningModule):
 
             for ibs, bs in enumerate(bsizes):
                 self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
+            return loss
         # print(Gs.shape, bs.shape)
         elif optimizer_idx == 2:
             bs = self.cache[device_name+'bs']
             Gs = self.cache[device_name+'gs']
             baseline_loss = self.baseline_mse_loss(bs, Gs)
             self.log("baseline_loss", baseline_loss)
+            return baseline_loss
         elif optimizer_idx == 1:
             bs = self.cache[device_name+'bs']
             Gs = self.cache[device_name+'gs']
@@ -153,6 +155,7 @@ class Net(pl.LightningModule):
 
             policy_loss = (-delta * log_actions.to(delta.device)).sum(axis=1).mean()
             self.log("rl_loss", policy_loss)
+            return policy_loss
         # opt, rl_optim, bs_optim = self.optimizers()
 
         # classification loss gradient step
@@ -176,7 +179,7 @@ class Net(pl.LightningModule):
         
         
 
-        return loss
+        
 
     # def training_epoch_end(self, training_step_outputs):
 
