@@ -56,6 +56,7 @@ class Net(pl.LightningModule):
         self.criterion = get_criterion(args, mixup_active)
         # self.automatic_optimization = False
         self.baseline_mse_loss = torch.nn.MSELoss()
+        self.cache = {}
 
     def configure_optimizers(self):
 
@@ -85,47 +86,68 @@ class Net(pl.LightningModule):
     def forward(self, x, skipper, baseline):
         return self.model(x, skipper, baseline)
         
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx, optimizer_idx):
         img, label = batch
-        labelx = label.unsqueeze(-1)
-        bsizes = []
-        # print(img.device, label.device)
-        if self.mixup_fn:
-            img, labelx = self.mixup_fn(img, labelx)
+        if optimizer_idx == 0:
+            labelx = label.unsqueeze(-1)
+            bsizes = []
+            # print(img.device, label.device)
+            if self.mixup_fn:
+                img, labelx = self.mixup_fn(img, labelx)
 
-        out = self(img, self.skipper, self.baseline)
-        outx, bsizes, n_layer_proc, log_actions, state_values = out
-        loss = self.criterion(outx, labelx)
+            out = self(img, self.skipper, self.baseline)
+            outx, bsizes, n_layer_proc, log_actions, state_values = out
+            loss = self.criterion(outx, labelx)
 
-        n_layers = self.model.num_layers
-        raw_acc = torch.eq(outx.detach().argmax(-1), label).float()
-        acc = raw_acc.mean()
+            n_layers = self.model.num_layers
+            raw_acc = torch.eq(outx.detach().argmax(-1), label).float()
+            acc = raw_acc.mean()
 
-        bsizesx = np.array(bsizes) / len(outx)
-        proc_ratio = bsizesx.mean()
+            bsizesx = np.array(bsizes) / len(outx)
+            proc_ratio = bsizesx.mean()
 
-        rewards = raw_acc - self.hparams.proc_alpha * \
-            n_layer_proc - self.hparams.reward_epsilon
-        total_reward = rewards
+            rewards = raw_acc - self.hparams.proc_alpha * \
+                n_layer_proc - self.hparams.reward_epsilon
+            total_reward = rewards
 
-        Gs = [rewards]
-        for xi in range(n_layers - 2, -1, -1):
+            Gs = [rewards]
+            for xi in range(n_layers - 2, -1, -1):
 
-            total_reward = total_reward * self.hparams.rl_gamma
-            Gs.append(total_reward)
+                total_reward = total_reward * self.hparams.rl_gamma
+                Gs.append(total_reward)
 
-        Gs.reverse()
+            Gs.reverse()
 
-        Gs = torch.stack(Gs).transpose(0, 1)
-        Gs = (Gs - Gs.mean(dim=1, keepdim=True))/Gs.std(dim=1, keepdim=True)
+            Gs = torch.stack(Gs).transpose(0, 1)
+            Gs = (Gs - Gs.mean(dim=1, keepdim=True))/Gs.std(dim=1, keepdim=True)
 
-        bs = torch.stack(state_values).squeeze().transpose(0, 1)
-        log_actions = torch.stack(log_actions).transpose(0, 1)
+            bs = torch.stack(state_values).squeeze().transpose(0, 1)
+            log_actions = torch.stack(log_actions).transpose(0, 1)
 
+            self.cache[img.device+'bs'] = bs
+            self.cache[img.device+'gs'] = Gs
+            self.cache[img.device+'log_actions'] = log_actions
+            self.log("loss", loss)
+            self.log("acc", acc)
+            self.log("reward", rewards.mean())
+            self.log("proc_ratio", proc_ratio)
+
+            for ibs, bs in enumerate(bsizes):
+                self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
         # print(Gs.shape, bs.shape)
-        baseline_loss = self.baseline_mse_loss(bs, Gs)
-
-        opt, rl_optim, bs_optim = self.optimizers()
+        elif optimizer_idx == 1:
+            bs = self.cache[img.device+'bs']
+            Gs = self.cache[img.device+'gs']
+            baseline_loss = self.baseline_mse_loss(bs, Gs)
+            self.log("baseline_loss", baseline_loss)
+        elif optimizer_idx == 2:
+            bs = self.cache[img.device+'bs']
+            Gs = self.cache[img.device+'gs']
+            log_actions = self.cache[img.device+'log_actions']
+            delta = Gs - bs.clone().detach()
+            policy_loss = (-delta * log_actions).sum(axis=1).mean()
+            self.log("rl_loss", policy_loss)
+        # opt, rl_optim, bs_optim = self.optimizers()
 
         # classification loss gradient step
         # opt.zero_grad()
@@ -138,21 +160,15 @@ class Net(pl.LightningModule):
         # bs_optim.step()
 
         # policy loss gradient step
-        delta = Gs - bs.clone().detach()
-        policy_loss = (-delta * log_actions).sum(axis=1).mean()
+        
         # rl_optim.zero_grad()
         # self.manual_backward(policy_loss)
         # rl_optim.step()
 
-        self.log("rl_loss", policy_loss)
-        self.log("baseline_loss", baseline_loss)
-        self.log("loss", loss)
-        self.log("acc", acc)
-        self.log("reward", rewards.mean())
-        self.log("proc_ratio", proc_ratio)
-
-        for ibs, bs in enumerate(bsizes):
-            self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
+        
+        
+        
+        
 
         return loss
 
