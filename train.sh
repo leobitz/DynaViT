@@ -1,5 +1,5 @@
 
-python dyna-train.py --model deit_small_patch16_LS  \
+python static-train.py --model deit_small_patch16_LS  \
 --data-path data/tinyimagenet/tiny-imagenet-200 \
 --batch-size 64 --lr 0.00001  --weight-decay 0.05 \
 --sched cosine --input-size 224 --eval-crop-ratio 1.0 \
