@@ -255,7 +255,7 @@ cbs = []
 logger = WandbLogger(name=args.exp_name, project=args.proj_name)
 trainer = pl.Trainer.from_argparse_args(args, 
                                 logger=logger,
-				strategy='dp', 
+				strategy='ddp', 
                                 callbacks=cbs)
         
 trainer.fit(model=net, train_dataloaders=data_loader_train, val_dataloaders=data_loader_val)
