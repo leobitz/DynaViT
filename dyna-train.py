@@ -27,7 +27,7 @@ class Net(pl.LightningModule):
 
         self.model = create_model(
                     hparams.model,
-                    pretrained=False,
+                    pretrained=True,
                     num_classes=1000,
                     drop_rate=hparams.drop,
                     drop_path_rate=hparams.drop_path,
@@ -92,7 +92,7 @@ class Net(pl.LightningModule):
         img, label = batch
         labelx = label.unsqueeze(-1)
         bsizes = []
-        # print(img.device, label.device)
+        
         if self.mixup_fn:
             img, labelx = self.mixup_fn(img, labelx)
 
