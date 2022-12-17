@@ -374,7 +374,7 @@ class dyna_vit_models(nn.Module):
         x = self.dropout(x)
         x = self.head(x)
         
-        return x
+        return x, [], [], [], []
 
     # def forward(self, x, skipper, baseline):
 
