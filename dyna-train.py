@@ -104,29 +104,29 @@ class Net(pl.LightningModule):
         raw_acc = torch.eq(outx.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
 
-        bsizesx = np.array(bsizes) / len(outx)
-        proc_ratio = bsizesx.mean()
+        # bsizesx = np.array(bsizes) / len(outx)
+        # proc_ratio = bsizesx.mean()
 
-        rewards = raw_acc - self.hparams.proc_alpha * \
-            n_layer_proc - self.hparams.reward_epsilon
-        total_reward = rewards
+        # rewards = raw_acc - self.hparams.proc_alpha * \
+        #     n_layer_proc - self.hparams.reward_epsilon
+        # total_reward = rewards
 
-        Gs = [rewards]
-        for xi in range(n_layers - 2, -1, -1):
+        # Gs = [rewards]
+        # for xi in range(n_layers - 2, -1, -1):
 
-            total_reward = total_reward * self.hparams.rl_gamma
-            Gs.append(total_reward)
+        #     total_reward = total_reward * self.hparams.rl_gamma
+        #     Gs.append(total_reward)
 
-        Gs.reverse()
+        # Gs.reverse()
 
-        Gs = torch.stack(Gs).transpose(0, 1)
-        Gs = (Gs - Gs.mean(dim=1, keepdim=True))/Gs.std(dim=1, keepdim=True)
+        # Gs = torch.stack(Gs).transpose(0, 1)
+        # Gs = (Gs - Gs.mean(dim=1, keepdim=True))/Gs.std(dim=1, keepdim=True)
 
-        bs = torch.stack(state_values).squeeze().transpose(0, 1)
-        log_actions = torch.stack(log_actions).transpose(0, 1)
+        # bs = torch.stack(state_values).squeeze().transpose(0, 1)
+        # log_actions = torch.stack(log_actions).transpose(0, 1)
 
-        # print(Gs.shape, bs.shape)
-        baseline_loss = self.baseline_mse_loss(bs, Gs)
+        # # print(Gs.shape, bs.shape)
+        # baseline_loss = self.baseline_mse_loss(bs, Gs)
 
         opt, rl_optim, bs_optim = self.optimizers()
 
@@ -137,29 +137,29 @@ class Net(pl.LightningModule):
             opt.step()
 
         # baseline loss gradient step
-        bs_optim.zero_grad()
-        self.manual_backward(baseline_loss)
-        if (batch_idx + 1) % self.grad_acc == 0:
-            bs_optim.step()
+        # bs_optim.zero_grad()
+        # self.manual_backward(baseline_loss)
+        # if (batch_idx + 1) % self.grad_acc == 0:
+        #     bs_optim.step()
 
-        # policy loss gradient step
-        delta = Gs - bs.clone().detach()
-        policy_loss = (-delta * log_actions).sum(axis=1).mean()
-        rl_optim.zero_grad()
-        self.manual_backward(policy_loss)
-        if (batch_idx + 1) % self.grad_acc == 0:
-            rl_optim.step()
+        # # policy loss gradient step
+        # delta = Gs - bs.clone().detach()
+        # policy_loss = (-delta * log_actions).sum(axis=1).mean()
+        # rl_optim.zero_grad()
+        # self.manual_backward(policy_loss)
+        # if (batch_idx + 1) % self.grad_acc == 0:
+        #     rl_optim.step()
 
         if (batch_idx + 1) % self.grad_acc == 0:
-            self.log("rl_loss", policy_loss)
-            self.log("baseline_loss", baseline_loss)
+            # self.log("rl_loss", policy_loss)
+            # self.log("baseline_loss", baseline_loss)
             self.log("loss", loss)
             self.log("acc", acc)
-            self.log("reward", rewards.mean())
-            self.log("proc_ratio", proc_ratio)
+            # self.log("reward", rewards.mean())
+            # self.log("proc_ratio", proc_ratio)
 
-            for ibs, bs in enumerate(bsizes):
-                self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
+            # for ibs, bs in enumerate(bsizes):
+            #     self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
 
         return loss
 
@@ -178,8 +178,8 @@ class Net(pl.LightningModule):
 
         out, bsizes, n_layer_proc, log_actions, state_values = out
 
-        bsizesx = np.array(bsizes) / len(out)
-        proc_ratio = bsizesx.mean()  # / (n_layers - 2)
+        # bsizesx = np.array(bsizes) / len(out)
+        # proc_ratio = bsizesx.mean()  # / (n_layers - 2)
 
         # print((-label.unsqueeze(-1) * torch.log_softmax(out, axis=-1)).shape)
 
@@ -187,9 +187,9 @@ class Net(pl.LightningModule):
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
 
-        rewards = raw_acc - n_layer_proc  # + 1) / (n_layers) )
-        self.log("val_reward", rewards.mean())
-        self.log("val_proc_ratio", proc_ratio)
+        # rewards = raw_acc - n_layer_proc  # + 1) / (n_layers) )
+        # self.log("val_reward", rewards.mean())
+        # self.log("val_proc_ratio", proc_ratio)
         self.log("val_loss", loss)
         self.log("val_acc", acc)
 
