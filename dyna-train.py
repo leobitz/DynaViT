@@ -128,7 +128,7 @@ class Net(pl.LightningModule):
         # # print(Gs.shape, bs.shape)
         # baseline_loss = self.baseline_mse_loss(bs, Gs)
 
-        opt, rl_optim, bs_optim = self.optimizers()
+        # opt, rl_optim, bs_optim = self.optimizers()
 
         # classification loss gradient step
         # opt.zero_grad()
