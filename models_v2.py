@@ -420,7 +420,7 @@ class dyna_vit_models(nn.Module):
             x = layer(x)
 
         x = self.norm(x)[:, 0]
-        # x = self.dropout(x)
+        x = self.dropout(x)
         x = self.head(x)
 
         return x, batch_proc_size, n_layer_proc, log_actions, state_values
