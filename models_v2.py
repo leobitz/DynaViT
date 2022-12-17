@@ -367,63 +367,62 @@ class dyna_vit_models(nn.Module):
         x = self.norm(x)
         return x[:, 0]
 
-    # def forward(self, x):
+    def forward(self, x):
 
-    #     x = self.forward_features(x)
+        x = self.forward_features(x)
         
-        # if self.dropout_rate:
-        #     x = F.dropout(x, p=float(self.dropout_rate), training=self.training)
-        # x = self.head(x)
-        
-    #     return x
-
-    def forward(self, x, skipper, baseline):
-
-        B = x.shape[0]
-        x = self.patch_embed(x)
-        cls_tokens = self.cls_token.expand(B, -1, -1)
-        x = x + self.pos_embed
-        x = torch.cat((cls_tokens, x), dim=1)
-
-        batch_proc_size = []
-        n_layer_proc = torch.zeros((len(x), ), device=x.device, dtype=torch.float32)
-        log_actions = []
-
-        # xs = [x]
-
-        state_values = []
-        for li, layer in enumerate(self.blocks):
-
-            # skip_input = x[:, 0].clone().detach()
-
-            # skip_pred, action, log_action, _ = skipper(skip_input, None, li)
-            # state_value, _ = baseline(skip_input, None, li)
-            
-            # state_values.append(state_value)
-    
-            # log_actions.append(log_action)
-            # n_layer_proc += action * self.proc_probs_softmax[li]
-
-            # layer_proc = torch.nonzero(action).flatten()
-            
-            # temp = x.clone()
-            # batch_proc_size.append(len(layer_proc))
-
-            # if len(layer_proc) > 0:
-            #     proc_batch = x[layer_proc]
-            #     x = layer(proc_batch)
-                
-            #     temp[layer_proc] = x
-
-            # x = temp
-
-            x = layer(x)
-
-        x = self.norm(x)[:, 0]
         x = self.dropout(x)
         x = self.head(x)
+        
+        return x
 
-        return x, batch_proc_size, n_layer_proc, log_actions, state_values
+    # def forward(self, x, skipper, baseline):
+
+    #     B = x.shape[0]
+    #     x = self.patch_embed(x)
+    #     cls_tokens = self.cls_token.expand(B, -1, -1)
+    #     x = x + self.pos_embed
+    #     x = torch.cat((cls_tokens, x), dim=1)
+
+    #     batch_proc_size = []
+    #     n_layer_proc = torch.zeros((len(x), ), device=x.device, dtype=torch.float32)
+    #     log_actions = []
+
+    #     # xs = [x]
+
+    #     state_values = []
+    #     for li, layer in enumerate(self.blocks):
+
+    #         # skip_input = x[:, 0].clone().detach()
+
+    #         # skip_pred, action, log_action, _ = skipper(skip_input, None, li)
+    #         # state_value, _ = baseline(skip_input, None, li)
+            
+    #         # state_values.append(state_value)
+    
+    #         # log_actions.append(log_action)
+    #         # n_layer_proc += action * self.proc_probs_softmax[li]
+
+    #         # layer_proc = torch.nonzero(action).flatten()
+            
+    #         # temp = x.clone()
+    #         # batch_proc_size.append(len(layer_proc))
+
+    #         # if len(layer_proc) > 0:
+    #         #     proc_batch = x[layer_proc]
+    #         #     x = layer(proc_batch)
+                
+    #         #     temp[layer_proc] = x
+
+    #         # x = temp
+
+    #         x = layer(x)
+
+    #     x = self.norm(x)[:, 0]
+    #     x = self.dropout(x)
+    #     x = self.head(x)
+
+    #     return x, batch_proc_size, n_layer_proc, log_actions, state_values
 
 # DeiT III: Revenge of the ViT (https://arxiv.org/abs/2204.07118)
 
