@@ -367,7 +367,7 @@ class dyna_vit_models(nn.Module):
         x = self.norm(x)
         return x[:, 0]
 
-    def forward(self, skipper, baseline):
+    def forward(self, x, skipper, baseline):
 
         x = self.forward_features(x)
         
