@@ -55,7 +55,7 @@ class Net(pl.LightningModule):
                 label_smoothing=hparams.smoothing, num_classes=hparams.nb_classes)
 
         self.criterion = get_criterion(args, mixup_active)
-        self.automatic_optimization = False
+        # self.automatic_optimization = False
         self.grad_acc = hparams.grad_acc
         self.baseline_mse_loss = torch.nn.MSELoss()
 
@@ -131,10 +131,10 @@ class Net(pl.LightningModule):
         opt, rl_optim, bs_optim = self.optimizers()
 
         # classification loss gradient step
-        opt.zero_grad()
-        self.manual_backward(loss)
-        if (batch_idx + 1) % self.grad_acc == 0:
-            opt.step()
+        # opt.zero_grad()
+        # self.manual_backward(loss)
+        # if (batch_idx + 1) % self.grad_acc == 0:
+        #     opt.step()
 
         # baseline loss gradient step
         # bs_optim.zero_grad()
@@ -163,13 +163,13 @@ class Net(pl.LightningModule):
 
         return loss
 
-    def training_epoch_end(self, training_step_outputs):
+    # def training_epoch_end(self, training_step_outputs):
 
-        if (self.trainer.current_epoch  + 1) % self.grad_acc == 0:
-            sch, rl_sch, bs_sch = self.lr_schedulers()
-            sch.step()
-            bs_sch.step()
-            rl_sch.step()
+    #     if (self.trainer.current_epoch  + 1) % self.grad_acc == 0:
+    #         sch, rl_sch, bs_sch = self.lr_schedulers()
+    #         sch.step()
+    #         bs_sch.step()
+    #         rl_sch.step()
 
     
     def validation_step(self, batch, batch_idx):
