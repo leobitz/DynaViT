@@ -76,7 +76,7 @@ class Net(pl.LightningModule):
 
         out = self(img)
         
-        loss = self.criterion(out, label)
+        loss = self.criterion(out, labelx)
 
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
