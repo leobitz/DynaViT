@@ -389,37 +389,33 @@ class dyna_vit_models(nn.Module):
         n_layer_proc = torch.zeros((len(x), ), device=x.device, dtype=torch.float32)
         log_actions = []
 
-        # xs = [x]
-
-        # hidden_units = None
-        # baseline_hidden_units = None
         state_values = []
         for li, layer in enumerate(self.blocks):
 
-            # skip_input = x[:, 0].clone().detach()
+            skip_input = x[:, 0].clone().detach()
 
-            # skip_pred, action, log_action, hidden_units = skipper(skip_input, hidden_units, li)
-            # state_value, baseline_hidden_units = baseline(skip_input, baseline_hidden_units, li)
+            skip_pred, action, log_action, _ = skipper(skip_input, None, li)
+            state_value, _ = baseline(skip_input, None, li)
             
-            # state_values.append(state_value)
+            state_values.append(state_value)
     
-            # log_actions.append(log_action)
-            # n_layer_proc += action * self.proc_probs_softmax[li]
+            log_actions.append(log_action)
+            n_layer_proc += action * self.proc_probs_softmax[li]
 
-            # layer_proc = torch.nonzero(action).flatten()
+            layer_proc = torch.nonzero(action).flatten()
             
-            # temp = x.clone()
-            # batch_proc_size.append(len(layer_proc))
+            temp = x.clone()
+            batch_proc_size.append(len(layer_proc))
 
-            # if len(layer_proc) > 0:
-            #     proc_batch = x[layer_proc]
-            #     x = layer(proc_batch)
+            if len(layer_proc) > 0:
+                proc_batch = x[layer_proc]
+                x = layer(proc_batch)
                 
-            #     temp[layer_proc] = x
+                temp[layer_proc] = x
 
-            # x = temp
+            x = temp
 
-            x = layer(x)
+            # x = layer(x)
 
         x = self.norm(x)[:, 0]
         x = self.dropout(x)
