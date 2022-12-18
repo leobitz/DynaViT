@@ -88,7 +88,7 @@ class Net(pl.LightningModule):
     def forward(self, x, skipper, baseline):
         return self.model(x, skipper, baseline)
         
-    def training_step(self, batch, batch_idx, opt_idx):
+    def training_step(self, batch, batch_idx, optimizer_idx):
         img, label = batch
         labelx = label.unsqueeze(-1)
         bsizes = []
@@ -158,8 +158,8 @@ class Net(pl.LightningModule):
             # self.log("reward", rewards.mean())
             # self.log("proc_ratio", proc_ratio)
 
-            for ibs, bs in enumerate(bsizes):
-                self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
+            # for ibs, bs in enumerate(bsizes):
+            #     self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
 
         return loss
 
