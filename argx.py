@@ -119,7 +119,7 @@ def get_args_parser():
     parser.add_argument('--distillation-tau', default=1.0, type=float, help="")
 
     # * Finetuning params
-    parser.add_argument('--finetune', default='', help='finetune from checkpoint')
+    parser.add_argument('--finetune', action='store_true')
     parser.add_argument('--attn-only', action='store_true') 
     
     # Dataset parameters
