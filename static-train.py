@@ -89,10 +89,10 @@ class Net(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         img, label = batch
-        label = label.unsqueeze(-1)
+        labelx = label.unsqueeze(-1)
         out = self(img)
 
-        loss = self.criterion(out, label)
+        loss = self.criterion(out, labelx)
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
 
