@@ -17,6 +17,6 @@ python static-train.py --model deit_tiny_patch16_LS  \
 --reprob 0.0  --smoothing 0.1 --warmup-epochs 0 --drop 0.0  \
 --seed 0 --opt adamw --warmup-lr 1e-6 --mixup .8 --drop-path 0.1 \
 --cutmix 1.0 --unscale-lr  --color-jitter 0.3 --ThreeAugment \
---proj_name 'tinyimagenet' --exp_name 'initial-static' --num_workers 8 \
+--proj_name 'tinyimagenet' --exp_name 'initial-static-cfar10' --num_workers 8 \
 --max_epochs 128 --accelerator 'gpu' --devices 4 --grad-acc 1  --data-set 'CIFAR10' \
 --rl-lr 0.0001 --rl-dropout 0.0 --rl-gamma 0.9 --dynamic 
