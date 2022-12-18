@@ -18,6 +18,7 @@ from datasets import build_dataset
 from helpers import get_criterion
 
 import models_v2
+import random
 
 class Net(pl.LightningModule):
     def __init__(self, hparams):
@@ -196,15 +197,12 @@ class Net(pl.LightningModule):
         return loss
         
 parser = argx.get_args_parser()
-
-# parser = DistillModule.add_model_specific_args(parser)
 parser = pl.Trainer.add_argparse_args(parser)
-
 args = parser.parse_args()
 
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
-
+random.seed(0)
 
 dataset_train, args.nb_classes = build_dataset(is_train=True, args=args)
 dataset_val, _ = build_dataset(is_train=False, args=args)
@@ -232,9 +230,7 @@ data_loader_val = torch.utils.data.DataLoader(
 
 net = Net(args)
 
-
 cbs = []
-# logger = TensorBoardLogger("logs", name=args.exp_name)
 logger = WandbLogger(name=args.exp_name, project=args.proj_name)
 trainer = pl.Trainer.from_argparse_args(args, 
                                 logger=logger,
