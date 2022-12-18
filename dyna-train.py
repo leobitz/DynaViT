@@ -82,13 +82,13 @@ class Net(pl.LightningModule):
         self.baseline_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.baseline_optimizer, T_max=self.hparams.max_epochs, eta_min=self.hparams.min_lr)
 
-        return ([self.optimizer, self.rl_optimizer, self.baseline_optimizer], 
-                [self.lr_scheduler, self.rl_scheduler, self.baseline_scheduler])
+        return ([self.optimizer], 
+                [self.lr_scheduler])
 
     def forward(self, x, skipper, baseline):
         return self.model(x, skipper, baseline)
         
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx):
         img, label = batch
         labelx = label.unsqueeze(-1)
         bsizes = []
