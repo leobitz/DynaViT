@@ -114,11 +114,11 @@ np.random.seed(args.seed)
 dataset_train, args.nb_classes = build_dataset(is_train=True, args=args)
 dataset_val, _ = build_dataset(is_train=False, args=args)
 
-sampler_train = torch.utils.data.RandomSampler(dataset_train)
-sampler_val = torch.utils.data.SequentialSampler(dataset_val)
+# sampler_train = torch.utils.data.RandomSampler(dataset_train)
+# sampler_val = torch.utils.data.SequentialSampler(dataset_val)
 
 data_loader_train = torch.utils.data.DataLoader(
-        dataset_train, sampler=sampler_train,
+        dataset_train, #sampler=sampler_train,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         pin_memory=args.pin_mem,
@@ -128,7 +128,7 @@ if args.ThreeAugment:
     data_loader_train.dataset.transform = new_data_aug_generator(args)
 
 data_loader_val = torch.utils.data.DataLoader(
-    dataset_val, sampler=sampler_val,
+    dataset_val, #sampler=sampler_val,
     batch_size=int(1.5 * args.batch_size),
     num_workers=args.num_workers,
     pin_memory=args.pin_mem,
