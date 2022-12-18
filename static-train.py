@@ -69,14 +69,14 @@ class Net(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         img, label = batch
-        labelx = label.unsqueeze(-1)
+        # labelx = label.unsqueeze(-1)
 
         # if self.mixup_fn:
         #     img, labelx = self.mixup_fn(img, labelx)
 
         out = self(img)
         
-        loss = self.criterion(out, labelx)
+        loss = self.criterion(out, label)
 
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
@@ -89,10 +89,10 @@ class Net(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         img, label = batch
-        labelx = label.unsqueeze(-1)
+        # labelx = label.unsqueeze(-1)
         out = self(img)
 
-        loss = self.criterion(out, labelx)
+        loss = self.criterion(out, label)
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
 
