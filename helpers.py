@@ -8,7 +8,8 @@ import torch
 def get_criterion(args, mixup_active):
     if mixup_active:
         # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
+        # criterion = SoftTargetCrossEntropy()
+        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
     elif args.smoothing:
         criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
     else:
