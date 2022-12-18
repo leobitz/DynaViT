@@ -57,7 +57,7 @@ def get_cifar10_transform(args, mean, std):
     train_transform = []
     test_transform = []
     train_transform += [
-        transforms.RandomCrop(size=args.size, padding=args.padding)
+        transforms.RandomCrop(size=32, padding=4)
     ]
     
     train_transform.append(CIFAR10Policy())
