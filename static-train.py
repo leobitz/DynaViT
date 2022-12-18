@@ -57,10 +57,10 @@ class Net(pl.LightningModule):
 
         self.base_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, T_max=self.hparams.max_epochs, eta_min=self.hparams.min_lr)
-        # self.lr_scheduler = warmup_scheduler.GradualWarmupScheduler(
-        #     self.optimizer, multiplier=1., total_epoch=self.hparams.warmup_epochs, 
-        #             after_scheduler=self.base_scheduler)
-        self.lr_scheduler = self.base_scheduler
+        self.lr_scheduler = warmup_scheduler.GradualWarmupScheduler(
+            self.optimizer, multiplier=1., total_epoch=self.hparams.warmup_epochs, 
+                    after_scheduler=self.base_scheduler)
+        # self.lr_scheduler = self.base_scheduler
 
         return ([self.optimizer], [self.lr_scheduler])
 
