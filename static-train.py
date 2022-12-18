@@ -28,7 +28,7 @@ class Net(pl.LightningModule):
         self.model = create_model(
                     hparams.model,
                     pretrained=hparams.finetune,
-                    num_classes=1000,
+                    num_classes=hparams.nb_classes,
                     drop_rate=hparams.drop,
                     drop_path_rate=hparams.drop_path,
                     drop_block_rate=None,
@@ -124,8 +124,8 @@ data_loader_train = torch.utils.data.DataLoader(
         pin_memory=args.pin_mem,
         drop_last=True,
     )
-if args.ThreeAugment:
-    data_loader_train.dataset.transform = new_data_aug_generator(args)
+# if args.ThreeAugment:
+#     data_loader_train.dataset.transform = new_data_aug_generator(args)
 
 data_loader_val = torch.utils.data.DataLoader(
     dataset_val, #sampler=sampler_val,
