@@ -64,7 +64,7 @@ def get_cifar10_transform(args, mean, std):
     
     train_transform += [
         transforms.ToTensor(),
-        transforms.Normalize(mean=args.mean, std=args.std)
+        transforms.Normalize(mean=mean, std=std)
     ]
     # if args.rcpaste:
     #     train_transform += [RandomCropPaste(size=args.size)]
