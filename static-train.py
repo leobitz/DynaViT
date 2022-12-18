@@ -71,8 +71,8 @@ class Net(pl.LightningModule):
         img, label = batch
         # labelx = label.unsqueeze(-1)
 
-        # if self.mixup_fn:
-        #     img, labelx = self.mixup_fn(img, labelx)
+        if self.mixup_fn:
+            img, labelx = self.mixup_fn(img, label)
 
         out = self(img)
         

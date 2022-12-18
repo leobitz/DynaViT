@@ -18,5 +18,5 @@ def get_criterion(args, mixup_active):
     if args.bce_loss:
         criterion = torch.nn.BCEWithLogitsLoss()
 
-    criterion = torch.nn.CrossEntropyLoss()
+    # criterion = torch.nn.CrossEntropyLoss()
     return criterion
