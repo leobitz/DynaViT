@@ -55,7 +55,7 @@ class Net(pl.LightningModule):
                 label_smoothing=hparams.smoothing, num_classes=hparams.nb_classes)
 
         self.criterion = get_criterion(args, mixup_active)
-        self.automatic_optimization = False
+        # self.automatic_optimization = False
         self.grad_acc = hparams.grad_acc
         self.baseline_mse_loss = torch.nn.MSELoss()
 
@@ -88,7 +88,7 @@ class Net(pl.LightningModule):
     def forward(self, x, skipper, baseline):
         return self.model(x, skipper, baseline)
         
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx, opt_idx):
         img, label = batch
         labelx = label.unsqueeze(-1)
         bsizes = []
@@ -104,72 +104,72 @@ class Net(pl.LightningModule):
         raw_acc = torch.eq(outx.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
 
-        bsizesx = np.array(bsizes) / len(outx)
-        proc_ratio = bsizesx.mean()
+        # bsizesx = np.array(bsizes) / len(outx)
+        # proc_ratio = bsizesx.mean()
 
-        rewards = raw_acc - self.hparams.proc_alpha * \
-            n_layer_proc - self.hparams.reward_epsilon
-        total_reward = rewards
+        # rewards = raw_acc - self.hparams.proc_alpha * \
+        #     n_layer_proc - self.hparams.reward_epsilon
+        # total_reward = rewards
 
-        Gs = [rewards]
-        for xi in range(n_layers - 2, -1, -1):
+        # Gs = [rewards]
+        # for xi in range(n_layers - 2, -1, -1):
 
-            total_reward = total_reward * self.hparams.rl_gamma
-            Gs.append(total_reward)
+        #     total_reward = total_reward * self.hparams.rl_gamma
+        #     Gs.append(total_reward)
 
-        Gs.reverse()
+        # Gs.reverse()
 
-        Gs = torch.stack(Gs).transpose(0, 1)
-        Gs = (Gs - Gs.mean(dim=1, keepdim=True))/Gs.std(dim=1, keepdim=True)
+        # Gs = torch.stack(Gs).transpose(0, 1)
+        # Gs = (Gs - Gs.mean(dim=1, keepdim=True))/Gs.std(dim=1, keepdim=True)
 
-        bs = torch.stack(state_values).squeeze().transpose(0, 1)
-        log_actions = torch.stack(log_actions).transpose(0, 1)
+        # bs = torch.stack(state_values).squeeze().transpose(0, 1)
+        # log_actions = torch.stack(log_actions).transpose(0, 1)
 
-        # print(Gs.shape, bs.shape)
-        baseline_loss = self.baseline_mse_loss(bs, Gs)
+        # # print(Gs.shape, bs.shape)
+        # baseline_loss = self.baseline_mse_loss(bs, Gs)
 
-        opt, rl_optim, bs_optim = self.optimizers()
+        # opt, rl_optim, bs_optim = self.optimizers()
 
-        # classification loss gradient step
-        opt.zero_grad()
-        self.manual_backward(loss)
+        # # classification loss gradient step
+        # opt.zero_grad()
+        # self.manual_backward(loss)
+        # if (batch_idx + 1) % self.grad_acc == 0:
+        #     opt.step()
+
+        # # baseline loss gradient step
+        # bs_optim.zero_grad()
+        # self.manual_backward(baseline_loss)
+        # if (batch_idx + 1) % self.grad_acc == 0:
+        #     bs_optim.step()
+
+        # # policy loss gradient step
+        # delta = Gs - bs.clone().detach()
+        # policy_loss = (-delta * log_actions).sum(axis=1).mean()
+        # rl_optim.zero_grad()
+        # self.manual_backward(policy_loss)
+        # if (batch_idx + 1) % self.grad_acc == 0:
+        #     rl_optim.step()
+
         if (batch_idx + 1) % self.grad_acc == 0:
-            opt.step()
-
-        # baseline loss gradient step
-        bs_optim.zero_grad()
-        self.manual_backward(baseline_loss)
-        if (batch_idx + 1) % self.grad_acc == 0:
-            bs_optim.step()
-
-        # policy loss gradient step
-        delta = Gs - bs.clone().detach()
-        policy_loss = (-delta * log_actions).sum(axis=1).mean()
-        rl_optim.zero_grad()
-        self.manual_backward(policy_loss)
-        if (batch_idx + 1) % self.grad_acc == 0:
-            rl_optim.step()
-
-        if (batch_idx + 1) % self.grad_acc == 0:
-            self.log("rl_loss", policy_loss)
-            self.log("baseline_loss", baseline_loss)
+            # self.log("rl_loss", policy_loss)
+            # self.log("baseline_loss", baseline_loss)
             self.log("loss", loss)
             self.log("acc", acc)
-            self.log("reward", rewards.mean())
-            self.log("proc_ratio", proc_ratio)
+            # self.log("reward", rewards.mean())
+            # self.log("proc_ratio", proc_ratio)
 
             for ibs, bs in enumerate(bsizes):
                 self.log(f"layer-{ibs+1}", float(bs)/len(raw_acc))
 
         return loss
 
-    def training_epoch_end(self, training_step_outputs):
+    # def training_epoch_end(self, training_step_outputs):
 
-        if (self.trainer.current_epoch  + 1) % self.grad_acc == 0:
-            sch, rl_sch, bs_sch = self.lr_schedulers()
-            sch.step()
-            bs_sch.step()
-            rl_sch.step()
+    #     if (self.trainer.current_epoch  + 1) % self.grad_acc == 0:
+    #         sch, rl_sch, bs_sch = self.lr_schedulers()
+    #         sch.step()
+    #         bs_sch.step()
+    #         rl_sch.step()
 
     
     def validation_step(self, batch, batch_idx):
