@@ -8,4 +8,4 @@ python dyna-train.py --model deit_small_patch16_LS  \
 --cutmix 1.0 --unscale-lr  --color-jitter 0.3 --ThreeAugment \
 --proj_name 'tinyimagenet' --exp_name 'initial-static' --num_workers 8 \
 --max_epochs 128 --accelerator 'gpu' --devices 4 --grad-acc 1  --data-set 'TINYIMNET' \
---rl-lr 0.0001 --rl-dropout 0.0 --rl-gamma 0.9 --dynamic
+--rl-lr 0.0001 --rl-dropout 0.0 --rl-gamma 0.9 --dynamic --finetune
