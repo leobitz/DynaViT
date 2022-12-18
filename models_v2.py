@@ -391,8 +391,8 @@ class dyna_vit_models(nn.Module):
 
         # xs = [x]
 
-        hidden_units = None
-        baseline_hidden_units = None
+        # hidden_units = None
+        # baseline_hidden_units = None
         state_values = []
         for li, layer in enumerate(self.blocks):
 

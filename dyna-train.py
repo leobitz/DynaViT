@@ -55,7 +55,7 @@ class Net(pl.LightningModule):
                 label_smoothing=hparams.smoothing, num_classes=hparams.nb_classes)
 
         self.criterion = get_criterion(args, mixup_active)
-        # self.automatic_optimization = False
+        self.automatic_optimization = False
         self.grad_acc = hparams.grad_acc
         self.baseline_mse_loss = torch.nn.MSELoss()
 
@@ -128,13 +128,13 @@ class Net(pl.LightningModule):
         # # print(Gs.shape, bs.shape)
         # baseline_loss = self.baseline_mse_loss(bs, Gs)
 
-        # opt, rl_optim, bs_optim = self.optimizers()
+        opt  = self.optimizers()
 
-        # # classification loss gradient step
-        # opt.zero_grad()
-        # self.manual_backward(loss)
-        # if (batch_idx + 1) % self.grad_acc == 0:
-        #     opt.step()
+        # classification loss gradient step
+        opt.zero_grad()
+        self.manual_backward(loss)
+        if (batch_idx + 1) % self.grad_acc == 0:
+            opt.step()
 
         # # baseline loss gradient step
         # bs_optim.zero_grad()
