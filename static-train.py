@@ -33,7 +33,7 @@ class Net(pl.LightningModule):
                     drop_path_rate=hparams.drop_path,
                     drop_block_rate=None,
                     img_size=hparams.input_size,
-                    dynamic=hparams.dynamic,
+                    dynamic=False,
                     finetune_num_classes=hparams.nb_classes,
                     rl_dropout = hparams.rl_dropout
                 )
