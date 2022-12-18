@@ -389,17 +389,13 @@ class dyna_vit_models(nn.Module):
         n_layer_proc = torch.zeros((len(x), ), device=x.device, dtype=torch.float32)
         log_actions = []
 
-        xs = [x]
-
-        hidden_units = None
-        baseline_hidden_units = None
         state_values = []
         for li, layer in enumerate(self.blocks):
 
-            skip_input = xs[-1][:, 0].clone().detach()
+            skip_input = x[:, 0].clone().detach()
 
-            skip_pred, action, log_action, hidden_units = skipper(skip_input, hidden_units, li)
-            state_value, baseline_hidden_units = baseline(skip_input, baseline_hidden_units, li)
+            skip_pred, action, log_action, _ = skipper(skip_input, None, li)
+            state_value, _ = baseline(skip_input, None, li)
             
             state_values.append(state_value)
     
@@ -408,20 +404,21 @@ class dyna_vit_models(nn.Module):
 
             layer_proc = torch.nonzero(action).flatten()
             
-            temp = xs[-1].clone()
+            temp = x.clone()
             batch_proc_size.append(len(layer_proc))
 
             if len(layer_proc) > 0:
-                proc_batch = xs[-1][layer_proc]
+                proc_batch = x[layer_proc]
                 x = layer(proc_batch)
                 
                 temp[layer_proc] = x
 
             x = temp
-            xs.append(x)
+
+            # x = layer(x)
 
         x = self.norm(x)[:, 0]
-        # x = self.dropout(x)
+        x = self.dropout(x)
         x = self.head(x)
 
         return x, batch_proc_size, n_layer_proc, log_actions, state_values

@@ -28,7 +28,7 @@ class Net(pl.LightningModule):
 
         self.model = create_model(
                     hparams.model,
-                    pretrained=False,
+                    pretrained=True,
                     num_classes=1000,
                     drop_rate=hparams.drop,
                     drop_path_rate=hparams.drop_path,
@@ -129,7 +129,7 @@ class Net(pl.LightningModule):
         # print(Gs.shape, bs.shape)
         baseline_loss = self.baseline_mse_loss(bs, Gs)
 
-        opt, rl_optim, bs_optim = self.optimizers()
+        opt, rl_optim, bs_optim  = self.optimizers()
 
         # classification loss gradient step
         opt.zero_grad()
@@ -181,8 +181,6 @@ class Net(pl.LightningModule):
 
         bsizesx = np.array(bsizes) / len(out)
         proc_ratio = bsizesx.mean()  # / (n_layers - 2)
-
-        # print((-label.unsqueeze(-1) * torch.log_softmax(out, axis=-1)).shape)
 
         loss = self.criterion(out, label.unsqueeze(-1))
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
