@@ -107,7 +107,10 @@ def build_transform(is_train, args):
             transforms.Resize(size, interpolation=3),  # to maintain same ratio w.r.t. 224 images
         )
         t.append(transforms.CenterCrop(args.input_size))
-
+        
     t.append(transforms.ToTensor())
-    t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
+    if args.data_set == "IMNET":
+        t.append(transforms.Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD))
+    elif args.data_set == "TINYIMNET":
+        t.append(transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)))
     return transforms.Compose(t)

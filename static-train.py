@@ -47,6 +47,7 @@ class Net(pl.LightningModule):
                 label_smoothing=hparams.smoothing, num_classes=hparams.nb_classes)
 
         self.criterion = get_criterion(args, mixup_active)
+        self.eval_criterion =  torch.nn.CrossEntropyLoss()
         # self.automatic_optimization = False
         # self.grad_acc = hparams.grad_acc
         self.baseline_mse_loss = torch.nn.MSELoss()
@@ -69,10 +70,9 @@ class Net(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         img, label = batch
-        labelx = label.unsqueeze(-1)
 
         if self.mixup_fn:
-            img, labelx = self.mixup_fn(img, labelx)
+            img, labelx = self.mixup_fn(img, label)
 
         out = self(img)
         
@@ -91,7 +91,7 @@ class Net(pl.LightningModule):
         img, label = batch
         out = self(img)
 
-        loss = self.criterion(out, label.unsqueeze(-1))
+        loss = self.eval_criterion(out, label)
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
 
