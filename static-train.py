@@ -47,6 +47,7 @@ class Net(pl.LightningModule):
                 label_smoothing=hparams.smoothing, num_classes=hparams.nb_classes)
 
         self.criterion = get_criterion(args, mixup_active)
+        self.eval_criterion =  torch.nn.CrossEntropyLoss()
         # self.automatic_optimization = False
         # self.grad_acc = hparams.grad_acc
         self.baseline_mse_loss = torch.nn.MSELoss()
@@ -92,7 +93,7 @@ class Net(pl.LightningModule):
         # labelx = label.unsqueeze(-1)
         out = self(img)
         print(out.shape, label.shape)
-        loss = self.criterion(out, label)
+        loss = self.eval_criterion(out, label)
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
         acc = raw_acc.mean()
 
