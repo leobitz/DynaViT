@@ -4,7 +4,6 @@ import argparse
 def get_args_parser():
     parser = argparse.ArgumentParser('DeiT training and evaluation script', add_help=False)
     parser.add_argument('--batch-size', default=64, type=int)
-    parser.add_argument('--epochs', default=300, type=int)
     parser.add_argument('--bce-loss', action='store_true')
     parser.add_argument('--unscale-lr', action='store_true')
 
@@ -20,7 +19,7 @@ def get_args_parser():
 
     parser.add_argument('--model-ema', action='store_true')
     parser.add_argument('--no-model-ema', action='store_false', dest='model_ema')
-    parser.set_defaults(model_ema=True)
+    parser.set_defaults(model_ema=False)
     parser.add_argument('--model-ema-decay', type=float, default=0.99996, help='')
     parser.add_argument('--model-ema-force-cpu', action='store_true', default=False, help='')
 
@@ -37,9 +36,10 @@ def get_args_parser():
                         help='SGD momentum (default: 0.9)')
     parser.add_argument('--weight-decay', type=float, default=0.05,
                         help='weight decay (default: 0.05)')
+    parser.add_argument("--beta1", default=0.9, type=float)
+    parser.add_argument("--beta2", default=0.999, type=float)
+
     # Learning rate schedule parameters
-    parser.add_argument('--sched', default='cosine', type=str, metavar='SCHEDULER',
-                        help='LR scheduler (default: "cosine"')
     parser.add_argument('--lr', type=float, default=5e-4, metavar='LR',
                         help='learning rate (default: 5e-4)')
     parser.add_argument('--lr-noise', type=float, nargs='+', default=None, metavar='pct, pct',
@@ -110,38 +110,22 @@ def get_args_parser():
     parser.add_argument('--mixup-mode', type=str, default='batch',
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
-    # Distillation parameters
-    parser.add_argument('--teacher-model', default='regnety_160', type=str, metavar='MODEL',
-                        help='Name of teacher model to train (default: "regnety_160"')
-    parser.add_argument('--teacher-path', type=str, default='')
-    parser.add_argument('--distillation-type', default='none', choices=['none', 'soft', 'hard'], type=str, help="")
-    parser.add_argument('--distillation-alpha', default=0.5, type=float, help="")
-    parser.add_argument('--distillation-tau', default=1.0, type=float, help="")
-
     # * Finetuning params
     parser.add_argument('--finetune', action='store_true')
-    parser.add_argument('--attn-only', action='store_true') 
-    
+
     # Dataset parameters
     parser.add_argument('--data-path', default='/datasets01/imagenet_full_size/061417/', type=str,
                         help='dataset path')
     parser.add_argument('--data-set', default='IMNET', choices=['CIFAR10','CIFAR100', 'TINYIMNET', 'IMNET', 'INAT', 'INAT19'],
                         type=str, help='Image Net dataset path')
-    parser.add_argument('--inat-category', default='name',
-                        choices=['kingdom', 'phylum', 'class', 'order', 'supercategory', 'family', 'genus', 'name'],
-                        type=str, help='semantic granularity')
 
     parser.add_argument('--output_dir', default='',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--device', default='cuda',
-                        help='device to use for training / testing')
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--resume', default='', help='resume from checkpoint')
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
     parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
-    parser.add_argument('--eval-crop-ratio', default=0.875, type=float, help="Crop ratio for evaluation")
-    parser.add_argument('--dist-eval', action='store_true', default=False, help='Enabling distributed evaluation')
     parser.add_argument('--num_workers', default=10, type=int)
     parser.add_argument('--pin-mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
@@ -149,19 +133,12 @@ def get_args_parser():
                         help='')
     parser.set_defaults(pin_mem=True)
 
-    # distributed training parameters
-    parser.add_argument('--world_size', default=1, type=int,
-                        help='number of distributed processes')
-    parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
-    #parser.add_argument('--gpus', default=0, type=int, help='number of GPUs')
     parser.add_argument('--exp_name', default='dynamic-vit', help='experiment name')
     parser.add_argument('--proj_name', default='dynamic-vit', help='project name')
-
 
     # dynamic vision transformer 
     parser.add_argument('--dynamic', action='store_true',
                         help='dynamic vision transformer')
-
     parser.add_argument("--rl-lr", default=1e-3, type=float)
     parser.add_argument("--rl-dropout", default=0.2, type=float)
     parser.add_argument("--rl-gamma", default=0.9, type=float)
@@ -169,9 +146,5 @@ def get_args_parser():
     parser.add_argument("--proc-alpha", default=3.0, type=float)
     parser.add_argument("--grad-acc", default=1, type=float)
 
-    parser.add_argument("--beta1", default=0.9, type=float)
-    parser.add_argument("--beta2", default=0.999, type=float)
-    # parser.add_argument("--weight-decay", default=5e-5, type=float)
-    # parser.add_argument("--warmup-epoch", default=5, type=int)
 
     return parser
