@@ -16,6 +16,7 @@ from agent import Baseline, Skipper
 from augment import new_data_aug_generator
 from datasets import build_dataset
 from helpers import get_criterion
+import vit_base
 
 import models_v2
 
@@ -25,18 +26,30 @@ class Net(pl.LightningModule):
 
         self.hparams.update(vars(hparams))
 
-        self.model = create_model(
-                    hparams.model,
-                    pretrained=hparams.finetune,
-                    num_classes=hparams.nb_classes,
-                    drop_rate=hparams.drop,
-                    drop_path_rate=hparams.drop_path,
-                    drop_block_rate=None,
-                    img_size=hparams.input_size,
-                    dynamic=False,
-                    finetune_num_classes=hparams.nb_classes,
-                    rl_dropout = hparams.rl_dropout
-                )
+        # self.model = create_model(
+        #             hparams.model,
+        #             pretrained=hparams.finetune,
+        #             num_classes=hparams.nb_classes,
+        #             drop_rate=hparams.drop,
+        #             drop_path_rate=hparams.drop_path,
+        #             drop_block_rate=None,
+        #             img_size=hparams.input_size,
+        #             dynamic=False,
+        #             finetune_num_classes=hparams.nb_classes,
+        #             rl_dropout = hparams.rl_dropout
+        #         )
+        self.model = vit_base.ViT(
+                3, 
+                10, 
+                img_size=32, 
+                patch=8, 
+                dropout=0.0, 
+                mlp_hidden=384,
+                num_layers=7,
+                hidden=384,
+                head=12,
+                is_cls_token=True,
+            )
 
         self.mixup_fn = None
         mixup_active = hparams.mixup > 0 or hparams.cutmix > 0. or hparams.cutmix_minmax is not None
