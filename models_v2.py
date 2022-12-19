@@ -199,7 +199,7 @@ class vit_models(nn.Module):
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
 
         dpr = [drop_path_rate for i in range(depth)]
         self.blocks = nn.ModuleList([
@@ -247,9 +247,9 @@ class vit_models(nn.Module):
 
         cls_tokens = self.cls_token.expand(B, -1, -1)
         
-        x = torch.cat((cls_tokens, x), dim=1)
-
         x = x + self.pos_embed
+        
+        x = torch.cat((cls_tokens, x), dim=1)
             
         for i , blk in enumerate(self.blocks):
             x = blk(x)
