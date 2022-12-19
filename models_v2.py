@@ -280,8 +280,8 @@ class dyna_vit_models(nn.Module):
                  Patch_layer=PatchEmbed,act_layer=nn.GELU,
                  Attention_block = Attention, Mlp_block=Mlp,
                  rl_dropout=0.1,
-                dpr_constant=True,init_scale=1e-4,
-                mlp_ratio_clstk = 4.0):
+                    dpr_constant=True,init_scale=1e-4,
+                    mlp_ratio_clstk = 4.0):
         super().__init__()
 
         print("Initing Dynamic Vit")
@@ -426,10 +426,10 @@ class dyna_vit_models(nn.Module):
 # DeiT III: Revenge of the ViT (https://arxiv.org/abs/2204.07118)
 
 @register_model
-def deit_tiny_patch16_LS(pretrained=False, img_size=32, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
+def deit_tiny_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False, dynamic=False, rl_dropout=0.2,  **kwargs):
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
-        img_size = img_size, patch_size=4, embed_dim=384, depth=7, num_heads=12, mlp_ratio=1, qkv_bias=True,
+        img_size = img_size, patch_size=4, embed_dim=384, depth=12, num_heads=3, mlp_ratio=1, qkv_bias=True,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout, **kwargs)
     
     return model
