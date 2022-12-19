@@ -199,7 +199,7 @@ class vit_models(nn.Module):
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
 
         dpr = [drop_path_rate for i in range(depth)]
         self.blocks = nn.ModuleList([
@@ -213,7 +213,7 @@ class vit_models(nn.Module):
 
         self.feature_info = [dict(num_chs=embed_dim, reduction=0, module='head')]
         self.head = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
-        self.dropout = nn.Dropout(float(self.dropout_rate))
+        self.dropout = nn.Dropout(self.dropout_rate)
         trunc_normal_(self.pos_embed, std=.02)
         trunc_normal_(self.cls_token, std=.02)
         self.apply(self._init_weights)
@@ -247,9 +247,9 @@ class vit_models(nn.Module):
 
         cls_tokens = self.cls_token.expand(B, -1, -1)
         
-        x = x + self.pos_embed
-        
         x = torch.cat((cls_tokens, x), dim=1)
+
+        x = x + self.pos_embed
             
         for i , blk in enumerate(self.blocks):
             x = blk(x)
@@ -430,7 +430,7 @@ def deit_tiny_patch16_LS(pretrained=False, img_size=224, pretrained_21k = False,
     model_class = dyna_vit_models if dynamic else vit_models
     model = model_class(
         img_size = img_size, patch_size=4, embed_dim=384, depth=7, num_heads=12, mlp_ratio=1, qkv_bias=True,
-        norm_layer=partial(nn.LayerNorm, eps=1e-6),block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout, **kwargs)
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), block_layers=Layer_scale_init_Block, rl_dropout=rl_dropout, **kwargs)
     
     return model
     
