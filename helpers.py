@@ -5,7 +5,7 @@ from timm.optim import create_optimizer
 from timm.utils import NativeScaler, get_state_dict, ModelEma
 import torch
 
-class LabelSmoothingCrossEntropyLoss(nn.Module):
+class LabelSmoothingCrossEntropyLoss(torch.nn.Module):
     def __init__(self, classes, smoothing=0.0, dim=-1):
         super(LabelSmoothingCrossEntropyLoss, self).__init__()
         self.confidence = 1.0 - smoothing
