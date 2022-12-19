@@ -54,7 +54,9 @@ class Net(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        self.optimizer = create_optimizer(self.hparams, self.model)
+        # self.optimizer = create_optimizer(self.hparams, self.model)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hparams.lr, betas=(
+            self.hparams.beta1, self.hparams.beta2), weight_decay=self.hparams.weight_decay)
 
         self.base_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, T_max=self.hparams.max_epochs, eta_min=self.hparams.min_lr)
