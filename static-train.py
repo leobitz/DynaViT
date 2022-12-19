@@ -120,9 +120,10 @@ dataset_val, _ = build_dataset(is_train=False, args=args)
 # sampler_val = torch.utils.data.SequentialSampler(dataset_val)
 
 data_loader_train = torch.utils.data.DataLoader(
-        dataset_train, #sampler=sampler_train,
+        dataset_train, 
         batch_size=args.batch_size,
         num_workers=args.num_workers,
+        shuffle=True,
         pin_memory=args.pin_mem,
         drop_last=True,
     )
@@ -130,7 +131,7 @@ data_loader_train = torch.utils.data.DataLoader(
 #     data_loader_train.dataset.transform = new_data_aug_generator(args)
 
 data_loader_val = torch.utils.data.DataLoader(
-    dataset_val, #sampler=sampler_val,
+    dataset_val, shuffle=False,
     batch_size=int(1.5 * args.batch_size),
     num_workers=args.num_workers,
     pin_memory=args.pin_mem,
