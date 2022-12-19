@@ -27,8 +27,9 @@ class LabelSmoothingCrossEntropyLoss(torch.nn.Module):
 def get_criterion(args, mixup_active):
     if mixup_active:
         # smoothing is handled with mixup label transform
-        criterion = LabelSmoothingCrossEntropyLoss(10, args.smoothing)
+        # criterion = LabelSmoothingCrossEntropyLoss(10, args.smoothing)
         # criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+        criterion = torch.nn.CrossEntropyLoss()
     elif args.smoothing:
         criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
     else:
