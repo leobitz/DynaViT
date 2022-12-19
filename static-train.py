@@ -78,7 +78,7 @@ class Net(pl.LightningModule):
             img, labelx = self.mixup_fn(img, label)
 
         out = self(img)
-        
+        print(labelx.dtype)
         loss = self.criterion(out, labelx)
 
         raw_acc = torch.eq(out.detach().argmax(-1), label).float()
