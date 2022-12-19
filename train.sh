@@ -12,7 +12,7 @@
 
 python static-train.py --model deit_tiny_patch16_LS  \
 --data-path data/cifar10 \
---batch-size 256 --lr 0.001  --weight-decay 5e-5 \
+--batch-size 256 --lr 0.0001  --weight-decay 5e-5 \
 --input-size 32 \
 --reprob 0.0  --smoothing 0.1 --warmup-epochs 5 --drop 0.0  \
 --seed 0 --opt adamw --warmup-lr 1e-6 --mixup 1.0 --drop-path 0.0 \
